@@ -1,7 +1,11 @@
+const _ = require('lodash')
+
+
 /* settings */
 
 
 const MAX_ID_LENGTH = 12
+const MAX_INT = 128
 
 
 /**
@@ -22,10 +26,19 @@ let variables = [{}]
 
 
 const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const code = [
+  'declaration',
+  'assignment',
+  'conditional',
+]
 const variableTypes = [
   'number',
   'string',
   'boolean',
+]
+const conditionalTypes = [
+  'if',
+  'ifElse',
 ]
 
 
@@ -33,7 +46,20 @@ const variableTypes = [
  * @returns string containing multiple lines of code
  */
 const generate = () => {
-  return
+  let generatedCode = ''
+
+  while (generatedCode.length < 500) {
+    // add generated code
+    const nextCode = randomElementFrom(code)
+
+    if (nextCode === 'declaration') {
+      generatedCode += `${generateDeclaration(randomElementFrom(variableTypes))}\n`
+    } else if (nextCode === 'assignment') {
+      generatedCode += `${generateAssignment()}\n`
+    }
+  }
+
+  return generatedCode
 }
 
 
@@ -41,15 +67,17 @@ const generate = () => {
  * @param type string that is an appropriate variable type
  * @returns string creating one line of code for a variable declaration 
  */
-const generateVariableDeclaration = type => {
+const generateDeclaration = type => {
   let variable
-  if (type === 'number') {
-    variable = generateNumberDeclaration()
-  } else if (type === 'string') {
-    variable = generateStringDeclaration()
-  } else if (type === 'boolean') {
-    variable = generateBooleanDeclaration()
-  }
+  do {
+    if (type === 'number') {
+      variable = generateNumberDeclaration()
+    } else if (type === 'string') {
+      variable = generateStringDeclaration()
+    } else if (type === 'boolean') {
+      variable = generateBooleanDeclaration()
+    }
+  } while (variables[variables.length - 1][variable.id])
 
   variables[variables.length - 1][variable.id] = variable.type
   return `let ${variable.id} = ${variable.value}`
@@ -71,7 +99,7 @@ const generateNumberDeclaration = () => {
   return {
     id: generateId(),
     type: 'number',
-    value: randomInt(128),
+    value: randomInt(MAX_INT),
   }
 }
 
@@ -80,7 +108,7 @@ const generateStringDeclaration = () => {
   return {
     id: generateId(),
     type: 'string',
-    value: generateId(12),
+    value: `'${generateId()}'`,
   }
 }
 
@@ -93,7 +121,33 @@ const generateBooleanDeclaration = () => {
   }
 }
 
+/* Assignment generators */
+
+
+const generateAssignment = () => {
+  let name
+  let type
+  let value
+
+  for (let i = variables.length - 1; i >= 0; i--) {
+    if (variables[i] !== undefined && variables[i] !== {}) {
+      name = randomElementFrom(_.keys(variables[i]))
+      type = variables[i][name]
+      break
+    }
+  }
+
+  if (name === undefined) { return generateDeclaration(_.sample(variableTypes)) }
+  if (type === 'number') { value = randomInt(MAX_INT) }
+  if (type === 'string') { value = `'${generateId()}'` }
+  if (type === 'boolean') { value = randomInt(2) === 0 ? false : true }
+
+  return `${name} = ${value}`
+}
+
+
 /* Helper functions */
+
 
 /**
  * @param upperBound
@@ -104,11 +158,12 @@ const randomInt = upperBound => Math.floor(Math.random() * upperBound)
 
 /**
  * @returns a random sequence of characters
- * @param 
+ * @param maxLength max length for the sequence of characters;
+ * if not present defaults to global constant MAX_ID_LENGTH
  */
- const generateId = maxLength => {
+const generateId = maxLength => {
   let id = ''
-  const length = randomInt(maxLength || MAX_ID_LENGTH)
+  const length = randomInt(maxLength || MAX_ID_LENGTH) + 1
 
   for (let i = 0; i < length; i++) {
     id += alphabet[randomInt(alphabet.length)]
@@ -116,6 +171,13 @@ const randomInt = upperBound => Math.floor(Math.random() * upperBound)
 
   return id
 }
+
+
+/**
+ * @param arr
+ * @returns random element from array arr
+ */
+const randomElementFrom = arr => arr[randomInt(arr.length)]
 
 // WIP
 console.log(generate())

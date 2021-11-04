@@ -1,0 +1,22 @@
+{
+  "name": "fake-code",
+  "version": "1.0.0",
+  "description": "fake code generator",
+  "main": "generator.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tyu012/fake-code.git"
+  },
+  "author": "Tim Yu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tyu012/fake-code/issues"
+  },
+  "homepage": "https://github.com/tyu012/fake-code#readme",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}
