@@ -125,17 +125,21 @@ const generateBooleanDeclaration = () => {
 
 
 const generateAssignment = () => {
-  let name
-  let type
-  let value
+  // let name
+  // let type
+  // let value
 
-  for (let i = variables.length - 1; i >= 0; i--) {
-    if (variables[i] !== undefined && variables[i] !== {}) {
-      name = randomElementFrom(_.keys(variables[i]))
-      type = variables[i][name]
-      break
-    }
-  }
+  // for (let i = variables.length - 1; i >= 0; i--) {
+  //   if (variables[i] !== undefined && variables[i] !== {}) {
+  //     name = randomElementFrom(_.keys(variables[i]))
+  //     type = variables[i][name]
+  //     break
+  //   }
+  // }
+
+  let v = findVariable()
+  let name, type, value
+  if (v !== undefined) { ({ name, type } = v) }
 
   if (name === undefined) { return generateDeclaration(_.sample(variableTypes)) }
   if (type === 'number') { value = randomInt(MAX_INT) }
@@ -178,6 +182,34 @@ const generateId = maxLength => {
  * @returns random element from array arr
  */
 const randomElementFrom = arr => arr[randomInt(arr.length)]
+
+
+/**
+ * @param type specified type, defaults to all variables
+ * @returns an object { name: '', type: '' } that matches the parameters,
+ * or undefined if no match is found
+ */
+const findVariable = type => {
+  for (let i = variables.length - 1; i >= 0; i--) {
+    if (variables[i] !== undefined && variables[i] !== {}) {
+
+      const keys = _.shuffle(_.keys(variables[i]))
+      for (let j = 0; j < keys.length; j++) {
+        const nameFound = keys[j]
+        const typeFound = variables[i][nameFound]
+
+        if (type === undefined || typeFound === type) {
+          return {
+            name: nameFound,
+            type: typeFound,
+          }
+        }
+      }
+
+    }
+  }
+  return undefined
+}
 
 // WIP
 console.log(generate())
