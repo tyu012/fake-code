@@ -1,3 +1,4 @@
+const { first } = require('lodash')
 const _ = require('lodash')
 
 
@@ -7,6 +8,7 @@ const _ = require('lodash')
 const MAX_ID_LENGTH = 12
 const MAX_INT = 128
 const MAX_CODE_LENGTH = 500
+const MAX_BLOCK_CODE_LENGTH = 75
 
 
 /**
@@ -39,7 +41,6 @@ const variableTypes = [
 ]
 const conditionalTypes = [
   'if',
-  'ifElse',
 ]
 
 
@@ -59,16 +60,24 @@ const generate = (maxLength, props) => {
     }
 
     if (nextCode === 'declaration') {
-      generatedCode += `${generateDeclaration(randomElementFrom(variableTypes))}\n`
+      generatedCode += `${generateDeclaration(_.sample(variableTypes))}\n`
     } else if (nextCode === 'assignment') {
       generatedCode += `${generateAssignment()}\n`
     } else if (nextCode === 'conditional') {
-      generatedCode += `` 
+      const conditional = generateConditional(_.sample(conditionalTypes))
+      if (conditional) {
+        generatedCode += conditional + '\n'
+      } else {
+        generatedCode += '\n'
+      }
     }
   }
 
   return generatedCode
 }
+
+
+/* Declaration generators */
 
 
 /**
@@ -93,7 +102,6 @@ const generateDeclaration = type => {
 
 
 /*
- * Declaration generators
  * generated variables follows the format
  * {
  *   id:
@@ -133,28 +141,34 @@ const generateBooleanDeclaration = () => {
 
 
 const generateAssignment = () => {
-  // let name
-  // let type
-  // let value
+  let v
+  if (findVariable()) {
+    v = findVariable()
+  } else {
+    return generateDeclaration(_.sample(variableTypes))
+  }
 
-  // for (let i = variables.length - 1; i >= 0; i--) {
-  //   if (variables[i] !== undefined && variables[i] !== {}) {
-  //     name = randomElementFrom(_.keys(variables[i]))
-  //     type = variables[i][name]
-  //     break
-  //   }
-  // }
-
-  let v = findVariable()
   let name, type, value
-  if (v !== undefined) { ({ name, type } = v) }
-
-  if (name === undefined) { return generateDeclaration(_.sample(variableTypes)) }
-  if (type === 'number') { value = randomInt(MAX_INT) }
-  if (type === 'string') { value = `'${generateId()}'` }
-  if (type === 'boolean') { value = randomInt(2) === 0 ? false : true }
+  if (v) { ({ name, type } = v) }
+  value = generateValue(type)
 
   return `${name} = ${value}`
+}
+
+
+/**
+ * generates value of specified type
+ * @param type type of value to be generated
+ */
+const generateValue = type => {
+  switch (type) {
+    case 'number':
+      return randomInt(MAX_INT)
+    case 'string':
+      return `'${generateId()}''`
+    case 'boolean':
+      return randomInt(2) === 1
+  }
 }
 
 
@@ -170,15 +184,53 @@ const generateAssignment = () => {
 
 
 /**
- * 
  * @param type the type of conditional that is used
  * @returns string of one block of conditional code
  */
 const generateConditional = type => {
-  
-  return `${conditional.type} (${conditional.condition}) {\n ${conditional.code}}`
+  let conditional
+
+  if (variables.length > 1) { return undefined }
+  if (type === 'if') { conditional = generateIf() }
+
+  return `\n${conditional.type} (${conditional.condition}) {\n${conditional.code}}\n`
 }
 
+
+const generateIf = () => {
+  variables.push({})
+  const body = generate(MAX_BLOCK_CODE_LENGTH)
+  variables.pop({})
+
+  return {
+    type: 'if',
+    condition: `${generateCondition()}`,
+    code: body,
+  }
+}
+
+
+const conditionalOperators = ['<', '>', '<=', '>=', '===', '!==']
+
+
+const generateCondition = () => {
+  const first = findVariable()
+  let second
+  try {
+    second = generateValue(first.type)
+  } catch (e) {
+    second = undefined
+  }
+
+  if (second) {
+    return `${first.name} ${_.sample(conditionalOperators)} ${second}`
+  } else if (first) {
+    return `${first.name}`
+  } else {
+    return `${generateValue('boolean')}`
+  }
+
+}
 
 /* Helper functions */
 
@@ -221,7 +273,7 @@ const randomElementFrom = arr => arr[randomInt(arr.length)]
  */
 const findVariable = type => {
   for (let i = variables.length - 1; i >= 0; i--) {
-    if (variables[i] !== undefined && variables[i] !== {}) {
+    if (variables[i] && variables[i] !== {}) {
 
       const keys = _.shuffle(_.keys(variables[i]))
       for (let j = 0; j < keys.length; j++) {
