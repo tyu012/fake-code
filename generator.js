@@ -6,6 +6,7 @@ const _ = require('lodash')
 
 const MAX_ID_LENGTH = 12
 const MAX_INT = 128
+const MAX_CODE_LENGTH = 500
 
 
 /**
@@ -44,18 +45,25 @@ const conditionalTypes = [
 
 /**
  * @returns string containing multiple lines of code
+ * @param maxLength max length of generated code, defaults to MAX_CODE_LENGTH
  */
-const generate = () => {
+const generate = (maxLength, props) => {
   let generatedCode = ''
 
-  while (generatedCode.length < 500) {
+  while (generatedCode.length < (maxLength || MAX_CODE_LENGTH)) {
     // add generated code
     const nextCode = randomElementFrom(code)
+
+    for (let i = 0; i < variables.length - 1; i++) {
+      generatedCode += ' '
+    }
 
     if (nextCode === 'declaration') {
       generatedCode += `${generateDeclaration(randomElementFrom(variableTypes))}\n`
     } else if (nextCode === 'assignment') {
       generatedCode += `${generateAssignment()}\n`
+    } else if (nextCode === 'conditional') {
+      generatedCode += `` 
     }
   }
 
@@ -150,6 +158,28 @@ const generateAssignment = () => {
 }
 
 
+/*
+ * Conditional generator
+ * generated variables follow the format
+ * {
+ *   type:
+ *   condition:
+ *   code:
+ * }
+ */
+
+
+/**
+ * 
+ * @param type the type of conditional that is used
+ * @returns string of one block of conditional code
+ */
+const generateConditional = type => {
+  
+  return `${conditional.type} (${conditional.condition}) {\n ${conditional.code}}`
+}
+
+
 /* Helper functions */
 
 
@@ -157,7 +187,7 @@ const generateAssignment = () => {
  * @param upperBound
  * @returns a random integer in the range [0, upperBound)
  */
-const randomInt = upperBound => Math.floor(Math.random() * upperBound)
+const randomInt = upperBound => Math.floor(Math.random() * (upperBound || MAX_INT))
 
 
 /**
@@ -186,8 +216,8 @@ const randomElementFrom = arr => arr[randomInt(arr.length)]
 
 /**
  * @param type specified type, defaults to all variables
- * @returns an object { name: '', type: '' } that matches the parameters,
- * or undefined if no match is found
+ * @returns a random object { name: '', type: '' } corresponding to a variable
+ * that matches the specified type, or undefined if no match is found
  */
 const findVariable = type => {
   for (let i = variables.length - 1; i >= 0; i--) {
