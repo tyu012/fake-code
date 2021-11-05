@@ -7,8 +7,9 @@ const _ = require('lodash')
 
 const MAX_ID_LENGTH = 12
 const MAX_INT = 128
-const MAX_CODE_LENGTH = 500
-const MAX_BLOCK_CODE_LENGTH = 75
+const MAX_CODE_LENGTH = 1000
+const MAX_BLOCK_CODE_LENGTH = 200
+const MAX_INDENT_LEVEL = 3
 
 
 /**
@@ -41,6 +42,7 @@ const variableTypes = [
 ]
 const conditionalTypes = [
   'if',
+  'ifElse',
 ]
 
 
@@ -55,9 +57,7 @@ const generate = (maxLength, props) => {
     // add generated code
     const nextCode = randomElementFrom(code)
 
-    for (let i = 0; i < variables.length - 1; i++) {
-      generatedCode += ' '
-    }
+    generatedCode += addIndentation()
 
     if (nextCode === 'declaration') {
       generatedCode += `${generateDeclaration(_.sample(variableTypes))}\n`
@@ -165,7 +165,7 @@ const generateValue = type => {
     case 'number':
       return randomInt(MAX_INT)
     case 'string':
-      return `'${generateId()}''`
+      return `'${generateId()}'`
     case 'boolean':
       return randomInt(2) === 1
   }
@@ -176,7 +176,6 @@ const generateValue = type => {
  * Conditional generator
  * generated variables follow the format
  * {
- *   type:
  *   condition:
  *   code:
  * }
@@ -190,10 +189,27 @@ const generateValue = type => {
 const generateConditional = type => {
   let conditional
 
-  if (variables.length > 1) { return undefined }
+  if (variables.length > MAX_INDENT_LEVEL) { return undefined }
   if (type === 'if') { conditional = generateIf() }
+  else if (type === 'ifElse') { conditional = generateIfElse() }
 
-  return `\n${conditional.type} (${conditional.condition}) {\n${conditional.code}}\n`
+  let conditionalString = '\n'
+
+  conditionalString += addIndentation()
+  conditionalString += `if (${conditional.condition}) {\n${conditional.code[0]}`
+
+  conditionalString += addIndentation()
+  conditionalString += `} `
+
+  if (conditional.code.length > 1) {
+    conditionalString += `else {\n${conditional.code[1]}`
+    conditionalString += addIndentation()
+    conditionalString += '}\n'
+  } else {
+    conditionalString += '\n'
+  }
+
+  return conditionalString
 }
 
 
@@ -203,9 +219,21 @@ const generateIf = () => {
   variables.pop({})
 
   return {
-    type: 'if',
-    condition: `${generateCondition()}`,
-    code: body,
+    condition: [`${generateCondition()}`],
+    code: [body],
+  }
+}
+
+const generateIfElse = () => {
+  const ifStatement = generateIf()
+
+  variables.push({})
+  const body = generate(MAX_BLOCK_CODE_LENGTH)
+  variables.pop({})
+
+  return {
+    ...ifStatement,
+    code: [ifStatement.code, body],
   }
 }
 
@@ -291,6 +319,17 @@ const findVariable = type => {
     }
   }
   return undefined
+}
+
+/**
+ * 
+ */
+const addIndentation = () => {
+  let string = ''
+  for (let i = 0; i < variables.length - 1; i++) {
+    string += '  '
+  }
+  return string
 }
 
 // WIP
